@@ -17,7 +17,7 @@ var yAxis = d3.svg.axis().scale(y).orient("left").ticks(5);
 var valueline = d3.svg.line()
     .x(function(d) { return x(d.id); })
     .y(function(d) { return y(d.value); })
-    .interpolate("linear");;
+    .interpolate("linear");
 
 function createSmartGraph(dataset) {
 
@@ -28,42 +28,42 @@ function createSmartGraph(dataset) {
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 	x.domain(d3.extent(dataset, function(d) { return d.id; }));
-    y.domain([0, d3.max(dataset, function(d) { return d.value; })]);
+  y.domain([0, d3.max(dataset, function(d) { return d.value; })]);
 
-    svg.append("path")
-        .attr("class", "line")
-        .attr("d", valueline(dataset));
+  svg.append("path")
+      .attr("class", "line")
+      .attr("d", valueline(dataset));
 
-    // Add the X Axis
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
+  // Add the X Axis
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
 
-    // Add the Y Axis
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
+  // Add the Y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
 
-    var tip = d3.tip()
+  var tip = d3.tip()
   		.attr('class', 'd3-tip')
   		.offset([-10, 0])
   		.html(function(d) {
     		return "<strong>Frequency:</strong> <span style='color:red'>" + d.value + "</span>";
   		});
 
-  	svg.call(tip);
+  svg.call(tip);
 
     // Add the scatterplot
-   	svg.selectAll("circle")
-        .data(dataset)
-      	.enter()
-      	.append("circle")
-        .attr("r", 3.5)
-        .attr("cx", function(d) { return x(d.id); })
-        .attr("cy", function(d) { return y(d.value); })
-        .on('mouseover', tip.show)
-      	.on('mouseout', tip.hide)
+   svg.selectAll("circle")
+      .data(dataset)
+      .enter()
+    	.append("circle")
+      .attr("r", 3.5)
+      .attr("cx", function(d) { return x(d.id); })
+      .attr("cy", function(d) { return y(d.value); })
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide)
 
 }
 
@@ -93,7 +93,5 @@ function updateSmartGraph(dataset) {
 		.transition()
 		.duration(1000)
 		.call(yAxis);
-
-
 
 }
