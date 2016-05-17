@@ -49,7 +49,7 @@ function createSmartGraph(dataset) {
   		.attr('class', 'd3-tip')
   		.offset([-10, 0])
   		.html(function(d) {
-    		return "<strong>Frequency:</strong> <span style='color:red'>" + d.value + "</span>";
+    	   return "<strong>Frequency:</strong> <span style='color:red'>" + d.value + "</span>";
   		});
 
   svg.call(tip);

@@ -6,23 +6,25 @@ window.onload = function() {
 	var width = 1000;
 	var height = 250;
 
-	var graph = new SmartGraph(margin, width, height);
-	graph.setXAxis(dataset);
-	graph.setYAxis(dataset);
+	var graph = new SmartGraph(margin, width, height, dataset);
+	graph.setXAxis();
+	graph.setYAxis();
 
-	graph.drawLine(dataset);
-	graph.scatterPlot(dataset);
+	graph.crosshair();
+	graph.drawLine();
+	graph.scatterPlot();
 	graph.tooltip();
-	graph.extremes(dataset);
 
-	// setInterval(function() { 
-	// 	document.getElementsByClassName("d3-tip")[0].style.display = "none";
-	// 	dataset = generateRandomDataset(20, 0, 100);
-	// 	graph.setXAxis(dataset);
-	// 	graph.setYAxis(dataset);
-	// 	graph.scatterPlot(dataset);
-	// 	graph.drawLine(dataset);
-	// }, 2000);
+	setInterval(function() { 
+		document.getElementsByClassName("d3-tip")[0].style.display = "none";
+		dataset = generateRandomDataset(20, 0, 100);
+		graph.updateDataset(dataset);
+		graph.setXAxis();
+		graph.setYAxis();
+		graph.crosshair();
+		graph.drawLine();
+		graph.scatterPlot();
+	}, 10000);
 
 }
 
