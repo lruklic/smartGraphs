@@ -7,10 +7,21 @@ function SmartGraph(margin, width, height, dataset) {
 	this.width = width - margin.left - margin.right;;
 	this.height = height - margin.top - margin.bottom;
 
-	this.x = d3.scale.linear().range([0, this.width]);
+	this.x = d3.time.scale().range([0, this.width]);
 	this.y = d3.scale.linear().range([this.height, 0]);
 
-	this.xAxis = d3.svg.axis().scale(this.x).orient("bottom").ticks(5);
+	var axisTimeFormat = d3.time.format.multi([
+    	[".%L", function(d) { return d.getMilliseconds(); }],
+    	[":%S", function(d) { return d.getSeconds(); }],
+    	["%H:%M", function(d) { return d.getMinutes(); }],
+    	["%H:%M", function(d) { return d.getHours(); }],
+    	["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
+    	["%b %d", function(d) { return d.getDate() != 1; }],
+    	["%B", function(d) { return d.getMonth(); }],
+    	["%Y", function() { return true; }]
+ 	]);
+
+	this.xAxis = d3.svg.axis().scale(this.x).orient("bottom").tickFormat(axisTimeFormat);
 	this.yAxis = d3.svg.axis().scale(this.y).orient("left").ticks(5);
 
 	this.svg = d3.select("body").append("svg")
@@ -19,13 +30,15 @@ function SmartGraph(margin, width, height, dataset) {
 		.append("g")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+	var readings = [];
 	for (var i = 0; i < dataset.length; i++) {
 		if (typeof dataset[i].value === "string") {
-			dataset[i].value = Number(dataset[i].value.replace(",", "."));
+			var reading = new Reading(new Date(dataset[i].date).getTime(), Number(dataset[i].value.replace(",", ".")));
+			readings.push(reading);
 		}
 	}
 
-	this.dataset = dataset;
+	this.dataset = readings;
 
 }
 
@@ -35,8 +48,11 @@ SmartGraph.prototype.updateDataset = function(dataset) {
 }
 
 SmartGraph.prototype.setDomains = function() {
-	this.x.domain(d3.extent(this.dataset, function(d) { return d.id; }));
-	this.y.domain([0, d3.max(this.dataset, function(d) { return d.value; })]);
+	this.x.domain([new Date(this.dataset[0].date), new Date(this.dataset[this.dataset.length-1].date)]);
+	this.y.domain([
+		d3.min(this.dataset, function(d) { return d.value; }),
+		d3.max(this.dataset, function(d) { return d.value; })
+		]);
 }
 
 SmartGraph.prototype.setXAxis = function() {
@@ -47,7 +63,14 @@ SmartGraph.prototype.setXAxis = function() {
 	if (selection.empty()) {
 		selection = this.svg.append("g")
     		.attr("class", "x axis")
-    		.attr("transform", "translate(0," + this.height + ")")
+    		.attr("transform", "translate(0," + this.height + ")");
+
+    	this.svg.append("text")
+	  		.attr("class", "xlabel")
+	  		.attr("text-anchor", "middle")
+	  		.attr("x", this.width / 2)
+	  		.attr("y", this.height + this.margin.bottom)
+	  		.text("Vrijeme očitanja");
 	} else {
 		selection.transition().duration(1000);
 	}
@@ -79,7 +102,9 @@ SmartGraph.prototype.drawLine = function(interpolation) {
 	var y = this.y;
 
 	var valueline = d3.svg.line()
-    	.x(function(d) { return x(d.id); })
+    	.x(function(d) { 
+    		return x(new Date(d.date)); 
+    	})
     	.y(function(d) { return y(d.value); })
     	.interpolate(interpolation ? interpolation : "monotone");
 
@@ -181,12 +206,21 @@ SmartGraph.prototype.crosshair = function() {
 
       	var xValue = Math.round(x.invert(d3.mouse(this)[0]));
 
+      	var minimalDifference = Number.MAX_VALUE;
+      	var minDiffElementIndex;
+      	for (var i = 0; i < dataset.length; i++) {
+      		if (Math.abs(dataset[i].date - xValue) < minimalDifference) {
+      			minimalDifference = Math.abs(dataset[i].date - xValue);
+      			minDiffElementIndex = i;
+      		}
+      	}
+
 		focus.select(".x")
-			.attr("transform", "translate(" + x(xValue) + "," + y(dataset[xValue].value) + ")")
-			.attr("y2", height - y(dataset[xValue].value));
+			.attr("transform", "translate(" + x(dataset[minDiffElementIndex].date) + "," + y(dataset[minDiffElementIndex].value) + ")")
+			.attr("y2", height - y(dataset[minDiffElementIndex].value));
 
 		focus.select(".y")
-		    .attr("transform", "translate(" + width * -1 + "," + y(dataset[xValue].value) + ")")
+		    .attr("transform", "translate(" + width * -1 + "," + y(dataset[minDiffElementIndex].value) + ")")
 		    .attr("x2", width + width);
 
       });
