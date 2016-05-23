@@ -2,16 +2,18 @@ window.onload = function() {
 
 	var dataset = generateRandomDataset(20, 0, 100);
 
-	var margin = {top: 30, right: 20, bottom: 50, left: 50}
-	var width = 1000;
-	var height = 250;
+	var margin = {top: 10, right: 10, bottom: 100, left: 40}
+	var width = 960;
+	var height = 500;
 
-	var graph = new SmartGraph(margin, width, height, dataDay);
+	var graph = new SmartGraph(margin, width, height, dataDay.reverse());
 	graph.setXAxis();
 	graph.setYAxis();
 
+	graph.gridBackground();
 	graph.drawLine();
 	graph.crosshair();
+	
 	//graph.scatterPlot();
 	graph.tooltip();
 
@@ -24,7 +26,7 @@ window.onload = function() {
 		graph.crosshair();
 		graph.drawLine();
 		//graph.scatterPlot();
-	}, 100000);
+	}, 10000000);
 
 }
 

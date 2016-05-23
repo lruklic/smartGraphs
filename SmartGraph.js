@@ -28,7 +28,32 @@ function SmartGraph(margin, width, height, dataset) {
 		.attr("width", this.width + margin.left + margin.right)
 		.attr("height", this.height + margin.top + margin.bottom)
 		.append("g")
+		.attr("class", "focus")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	// TODO define margins of context graph based on margins, h and w of the focus graph
+	var margin2 = {top: 430, right: 10, bottom: 20, left: 40}
+	this.height2 = height - margin2.top - margin2.bottom;
+	this.y2 = d3.scale.linear().range([this.height2, 0]);
+
+	var x = this.x;
+	var y2 = this.y2;
+
+	var area2 = d3.svg.area()
+	    .interpolate("monotone")
+    	.x(function(d) { return x(d.date); })
+    	.y0(this.height2)
+    	.y1(function(d) { return y2(d.value); });
+
+	this.contextSvg = d3.select("body").select("svg")
+		.append("g")
+		.attr("class", "context")
+		.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+	this.contextSvg.append("path")
+      	.datum(dataset)
+      	.attr("class", "area")
+      	.attr("d", area2)
 
 	var readings = [];
 	for (var i = 0; i < dataset.length; i++) {
@@ -49,10 +74,12 @@ SmartGraph.prototype.updateDataset = function(dataset) {
 
 SmartGraph.prototype.setDomains = function() {
 	this.x.domain([new Date(this.dataset[0].date), new Date(this.dataset[this.dataset.length-1].date)]);
-	this.y.domain([
-		d3.min(this.dataset, function(d) { return d.value; }),
-		d3.max(this.dataset, function(d) { return d.value; })
-		]);
+
+	var min = d3.min(this.dataset, function(d) { return d.value; });
+	var max = d3.max(this.dataset, function(d) { return d.value; });
+
+	// Fixed threshold to prevent "false" boundaries 
+	this.y.domain([min - 0.5, max + 0.5]);
 }
 
 SmartGraph.prototype.setXAxis = function() {
@@ -69,8 +96,7 @@ SmartGraph.prototype.setXAxis = function() {
 	  		.attr("class", "xlabel")
 	  		.attr("text-anchor", "middle")
 	  		.attr("x", this.width / 2)
-	  		.attr("y", this.height + this.margin.bottom)
-	  		.text("Vrijeme očitanja");
+	  		.attr("y", this.height + this.margin.bottom);
 	} else {
 		selection.transition().duration(1000);
 	}
@@ -165,6 +191,24 @@ SmartGraph.prototype.scatterPlot = function() {
 
 }
 
+SmartGraph.prototype.gridBackground = function() {
+
+	this.svg.append("g")         
+        .attr("class", "grid")
+        .attr("transform", "translate(0," + this.height + ")")
+        .call(d3.svg.axis().scale(this.x).orient("bottom").ticks(5)
+            .tickSize(-this.height, 0, 0)
+            .tickFormat("")
+        )
+
+    this.svg.append("g")         
+        .attr("class", "grid")
+        .call(d3.svg.axis().scale(this.y).orient("left").ticks(5)
+            .tickSize(-this.width, 0, 0)
+            .tickFormat("")
+        )
+}
+
 SmartGraph.prototype.crosshair = function() {
 
 	var x = this.x;
@@ -227,6 +271,9 @@ SmartGraph.prototype.crosshair = function() {
 
 }
 
+/**
+ * Method that adds tooltips over selected units.
+ */
 SmartGraph.prototype.tooltip = function() {
 
 	var tip = d3.tip()
