@@ -41,10 +41,27 @@ path {
   left: 0;
 }
 
+/* Grid classes */
 .grid .tick {
     stroke: lightgrey;
     opacity: 0.7;
 }
 .grid path {
       stroke-width: 0;
+}
+
+/* Double graph classes */
+.area {
+  fill: darkorange;
+  clip-path: url(#clip);
+}
+
+.line {
+  clip-path: url(#clip);
+}
+
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
 }

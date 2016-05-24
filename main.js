@@ -66,32 +66,3 @@ function createSmartGraph(dataset) {
       .on('mouseout', tip.hide)
 
 }
-
-function updateSmartGraph(dataset) {
-
-	x.domain(d3.extent(dataset, function(d) { return d.id; }));
-    y.domain([0, d3.max(dataset, function(d) { return d.value; })]);
-
-	svg.select("path")
-	   .transition()
-	   .duration(500)
-	   .attr("d", valueline(dataset));
-
-	svg.selectAll("circle")
-        .data(dataset)
-        .transition()
-        .attr("r", 3.5)
-        .attr("cx", function(d) { return x(d.id); })
-        .attr("cy", function(d) { return y(d.value); });
-
-	svg.select(".x.axis")
-		.transition()
-		.duration(1000)
-		.call(xAxis);
-					
-	svg.select(".y.axis")
-		.transition()
-		.duration(1000)
-		.call(yAxis);
-
-}

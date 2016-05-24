@@ -1,3 +1,5 @@
+var graph;
+
 window.onload = function() {
 
 	var dataset = generateRandomDataset(20, 0, 100);
@@ -6,7 +8,7 @@ window.onload = function() {
 	var width = 960;
 	var height = 500;
 
-	var graph = new SmartGraph(margin, width, height, dataDay.reverse());
+	graph = new SmartGraph(margin, width, height, dataDay.reverse());
 	graph.setXAxis();
 	graph.setYAxis();
 

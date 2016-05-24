@@ -28,32 +28,8 @@ function SmartGraph(margin, width, height, dataset) {
 		.attr("width", this.width + margin.left + margin.right)
 		.attr("height", this.height + margin.top + margin.bottom)
 		.append("g")
-		.attr("class", "focus")
+		.attr("class", "main")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-	// TODO define margins of context graph based on margins, h and w of the focus graph
-	var margin2 = {top: 430, right: 10, bottom: 20, left: 40}
-	this.height2 = height - margin2.top - margin2.bottom;
-	this.y2 = d3.scale.linear().range([this.height2, 0]);
-
-	var x = this.x;
-	var y2 = this.y2;
-
-	var area2 = d3.svg.area()
-	    .interpolate("monotone")
-    	.x(function(d) { return x(d.date); })
-    	.y0(this.height2)
-    	.y1(function(d) { return y2(d.value); });
-
-	this.contextSvg = d3.select("body").select("svg")
-		.append("g")
-		.attr("class", "context")
-		.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
-
-	this.contextSvg.append("path")
-      	.datum(dataset)
-      	.attr("class", "area")
-      	.attr("d", area2)
 
 	var readings = [];
 	for (var i = 0; i < dataset.length; i++) {
@@ -65,6 +41,87 @@ function SmartGraph(margin, width, height, dataset) {
 
 	this.dataset = readings;
 
+	// TODO define margins of context graph based on margins, h and w of the focus graph
+	var margin2 = {top: 430, right: 10, bottom: 20, left: 40}
+	this.height2 = height - margin2.top - margin2.bottom;
+	this.x2 = d3.time.scale().range([0, this.width]);
+	this.y2 = d3.scale.linear().range([this.height2, 0]);
+
+	var x = this.x;
+	var y = this.y;
+	var x2 = this.x2;
+	var y2 = this.y2;
+
+	var data = this.dataset;
+
+	this.x.domain([new Date(this.dataset[0].date), new Date(this.dataset[this.dataset.length-1].date)]);
+	this.y.domain([d3.min(this.dataset, function(d) { return d.value; }), d3.max(this.dataset, function(d) { return d.value; })]);
+	this.x2.domain(this.x.domain());
+	this.y2.domain(this.y.domain());
+
+	this.xAxis2 = d3.svg.axis().scale(this.x2).orient("bottom").tickFormat(axisTimeFormat);
+
+	var area2 = d3.svg.area()
+	    .interpolate("monotone")
+    	.x(function(d) {
+    		return x(new Date(d.date)); })
+    	.y0(this.height2)
+    	.y1(function(d) {
+    		//alert(y2(d.value));
+    		return y2(d.value); 
+    	});
+
+	this.contextSvg = d3.select("body").select("svg")
+		.append("g")
+		.attr("class", "context")
+		.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+	this.contextSvg.append("path")
+      	.datum(this.dataset)
+      	.attr("class", "area")
+      	.attr("d", area2);
+
+    this.contextSvg.append("g")
+      	.attr("class", "x axis")
+      	.attr("transform", "translate(0," + this.height2 + ")")
+      	.call(this.xAxis2);
+
+    var brush = d3.svg.brush()
+    	.x(x2)
+    	.on("brush", function() {
+    		x.domain(brush.empty() ? x2.domain() : brush.extent());
+    		var valueline = d3.svg.line()
+    			.x(function(d) {
+    				return x(new Date(d.date)); 
+    			})
+    			.y(function(d) { return y(d.value); })
+    			.interpolate("monotone");
+
+   			var selection = d3.select("svg").select("g").select("path#linegraph");
+			selection.attr("d", valueline(data));
+
+			var selection = this.svg.select(".x.axis")
+
+    	});
+
+    this.contextSvg.append("g")
+      	.attr("class", "x brush")
+     	.call(brush)
+    	.selectAll("rect")
+      	.attr("y", -6)
+      	.attr("height", this.height2 + 7);
+
+    this.svg.append("defs").append("clipPath")
+    	.attr("id", "clip")
+  		.append("rect")
+    	.attr("width", this.width)
+    	.attr("height", this.height);
+
+    // Method that updates focus graph on context graph select
+    function brushed() { 		
+  		//focus.select(".area").attr("d", area);
+  		//focus.select(".x.axis").call(this.xAxis);
+	}
 }
 
 SmartGraph.prototype.updateDataset = function(dataset) {
