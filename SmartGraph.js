@@ -51,6 +51,7 @@ function SmartGraph(margin, width, height, dataset) {
 	var y = this.y;
 	var x2 = this.x2;
 	var y2 = this.y2;
+	var xAxis = this.xAxis;
 
 	var data = this.dataset;
 
@@ -100,7 +101,7 @@ function SmartGraph(margin, width, height, dataset) {
    			var selection = d3.select("svg").select("g").select("path#linegraph");
 			selection.attr("d", valueline(data));
 
-			var selection = this.svg.select(".x.axis")
+			d3.select("svg").select(".x.axis").call(xAxis);
 
     	});
 
