@@ -2,6 +2,10 @@
  * SmartGraph constructor. Receives margin JSON, width, height and dataset. 
  */
 
+function DatasetObject() {
+	this.data = [];
+}
+
 function SmartGraph(margin, width, height, dataset) {
 	this.margin = margin;
 	this.width = width - margin.left - margin.right;;
@@ -31,19 +35,24 @@ function SmartGraph(margin, width, height, dataset) {
 		.attr("class", "main")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-	var readings = [];
+	var datasetObject = new DatasetObject();
 	for (var i = 0; i < dataset.length; i++) {
 		if (typeof dataset[i].value === "string") {
 			var reading = new Reading(new Date(dataset[i].date).getTime(), Number(dataset[i].value.replace(",", ".")));
-			readings.push(reading);
+			datasetObject.data.push(reading);
 		}
 	}
 
-	this.dataset = readings;
+	this.dataset = datasetObject;
 
+	this.createContextGraph();
+
+}
+
+SmartGraph.prototype.createContextGraph = function() {
 	// TODO define margins of context graph based on margins, h and w of the focus graph
 	var margin2 = {top: 430, right: 10, bottom: 20, left: 40}
-	this.height2 = height - margin2.top - margin2.bottom;
+	this.height2 = this.height + this.margin.top + this.margin.bottom - margin2.top - margin2.bottom;
 	this.x2 = d3.time.scale().range([0, this.width]);
 	this.y2 = d3.scale.linear().range([this.height2, 0]);
 
@@ -53,14 +62,14 @@ function SmartGraph(margin, width, height, dataset) {
 	var y2 = this.y2;
 	var xAxis = this.xAxis;
 
-	var data = this.dataset;
+	var dataset = this.dataset;
 
-	this.x.domain([new Date(this.dataset[0].date), new Date(this.dataset[this.dataset.length-1].date)]);
-	this.y.domain([d3.min(this.dataset, function(d) { return d.value; }), d3.max(this.dataset, function(d) { return d.value; })]);
+	this.x.domain([new Date(this.dataset.data[0].date), new Date(this.dataset.data[this.dataset.data.length-1].date)]);
+	this.y.domain([d3.min(this.dataset.data, function(d) { return d.value; }), d3.max(this.dataset.data, function(d) { return d.value; })]);
 	this.x2.domain(this.x.domain());
 	this.y2.domain(this.y.domain());
 
-	this.xAxis2 = d3.svg.axis().scale(this.x2).orient("bottom").tickFormat(axisTimeFormat);
+	this.xAxis2 = d3.svg.axis().scale(this.x2).orient("bottom").tickFormat(this.axisTimeFormat);
 
 	var area2 = d3.svg.area()
 	    .interpolate("monotone")
@@ -68,7 +77,6 @@ function SmartGraph(margin, width, height, dataset) {
     		return x(new Date(d.date)); })
     	.y0(this.height2)
     	.y1(function(d) {
-    		//alert(y2(d.value));
     		return y2(d.value); 
     	});
 
@@ -78,7 +86,7 @@ function SmartGraph(margin, width, height, dataset) {
 		.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
 
 	this.contextSvg.append("path")
-      	.datum(this.dataset)
+      	.datum(this.dataset.data)
       	.attr("class", "area")
       	.attr("d", area2);
 
@@ -99,7 +107,7 @@ function SmartGraph(margin, width, height, dataset) {
     			.interpolate("monotone");
 
    			var selection = d3.select("svg").select("g").select("path#linegraph");
-			selection.attr("d", valueline(data));
+			selection.attr("d", valueline(dataset.data));
 
 			d3.select("svg").select(".x.axis").call(xAxis);
 
@@ -117,24 +125,34 @@ function SmartGraph(margin, width, height, dataset) {
   		.append("rect")
     	.attr("width", this.width)
     	.attr("height", this.height);
-
-    // Method that updates focus graph on context graph select
-    function brushed() { 		
-  		//focus.select(".area").attr("d", area);
-  		//focus.select(".x.axis").call(this.xAxis);
-	}
 }
 
 SmartGraph.prototype.updateDataset = function(dataset) {
-	this.dataset = dataset;
-	// TODO refresh all active instances
+
+	var readings = [];
+	for (var i = 0; i < dataset.length; i++) {
+		if (typeof dataset[i].value === "string") {
+			var reading = new Reading(new Date(dataset[i].date).getTime(), Number(dataset[i].value.replace(",", ".")));
+			readings.push(reading);
+		}
+	}
+
+	this.dataset.data = readings;
+
+	this.setXAxis();
+	this.setYAxis();
+	this.crosshair();
+	this.drawLine();
 }
 
+/**
+ * Method that sets domains for graph.
+ */
 SmartGraph.prototype.setDomains = function() {
-	this.x.domain([new Date(this.dataset[0].date), new Date(this.dataset[this.dataset.length-1].date)]);
+	this.x.domain([new Date(this.dataset.data[0].date), new Date(this.dataset.data[this.dataset.data.length-1].date)]);
 
-	var min = d3.min(this.dataset, function(d) { return d.value; });
-	var max = d3.max(this.dataset, function(d) { return d.value; });
+	var min = d3.min(this.dataset.data, function(d) { return d.value; });
+	var max = d3.max(this.dataset.data, function(d) { return d.value; });
 
 	// Fixed threshold to prevent "false" boundaries 
 	this.y.domain([min - 0.5, max + 0.5]);
@@ -155,11 +173,12 @@ SmartGraph.prototype.setXAxis = function() {
 	  		.attr("text-anchor", "middle")
 	  		.attr("x", this.width / 2)
 	  		.attr("y", this.height + this.margin.bottom);
+
+	  	selection.call(this.xAxis);
 	} else {
-		selection.transition().duration(1000);
+		selection.transition().duration(1000).call(this.xAxis);
 	}
 
-	selection.call(this.xAxis);
 }
 
 SmartGraph.prototype.setYAxis = function() {
@@ -170,11 +189,10 @@ SmartGraph.prototype.setYAxis = function() {
 	if (selection.empty()) {
 		selection = this.svg.append("g")
     		.attr("class", "y axis")
+    		.call(this.yAxis);
 	} else {
-		selection.transition().duration(1000);
+		selection.transition().duration(1000).call(this.yAxis);
 	}
-
-	selection.call(this.yAxis);
 }
 
 /**
@@ -204,7 +222,7 @@ SmartGraph.prototype.drawLine = function(interpolation) {
 		selection = selection.transition().duration(500);
 	}
 		
-	selection.attr("d", valueline(this.dataset));
+	selection.attr("d", valueline(this.dataset.data));
 
 }
 
@@ -215,17 +233,17 @@ SmartGraph.prototype.scatterPlot = function() {
 
 	var max = Number.MIN_VALUE, min = Number.MAX_VALUE;
 
-	for (var i = 0; i < this.dataset.length; i++) {
-		if (this.dataset[i].value > max) max = this.dataset[i].value;
-		if (this.dataset[i].value < min) min = this.dataset[i].value;
+	for (var i = 0; i < this.dataset.data.length; i++) {
+		if (this.dataset.data[i].value > max) max = this.dataset.data[i].value;
+		if (this.dataset.data[i].value < min) min = this.dataset.data[i].value;
 	}
 
 	var selection = this.svg.selectAll("circle");
 
 	if (selection.empty()) {
-		selection = selection.data(this.dataset).enter().append("g").append("circle");
+		selection = selection.data(this.dataset.data).enter().append("g").append("circle");
 	} else {
-		selection = selection.data(this.dataset).transition();
+		selection = selection.data(this.dataset.data).transition();
 	}
 
 	selection.attr("cx", function(d) { return x(d.id); })
@@ -310,19 +328,19 @@ SmartGraph.prototype.crosshair = function() {
 
       	var minimalDifference = Number.MAX_VALUE;
       	var minDiffElementIndex;
-      	for (var i = 0; i < dataset.length; i++) {
-      		if (Math.abs(dataset[i].date - xValue) < minimalDifference) {
-      			minimalDifference = Math.abs(dataset[i].date - xValue);
+      	for (var i = 0; i < dataset.data.length; i++) {
+      		if (Math.abs(dataset.data[i].date - xValue) < minimalDifference) {
+      			minimalDifference = Math.abs(dataset.data[i].date - xValue);
       			minDiffElementIndex = i;
       		}
       	}
 
 		focus.select(".x")
-			.attr("transform", "translate(" + x(dataset[minDiffElementIndex].date) + "," + y(dataset[minDiffElementIndex].value) + ")")
-			.attr("y2", height - y(dataset[minDiffElementIndex].value));
+			.attr("transform", "translate(" + x(dataset.data[minDiffElementIndex].date) + "," + y(dataset.data[minDiffElementIndex].value) + ")")
+			.attr("y2", height - y(dataset.data[minDiffElementIndex].value));
 
 		focus.select(".y")
-		    .attr("transform", "translate(" + width * -1 + "," + y(dataset[minDiffElementIndex].value) + ")")
+		    .attr("transform", "translate(" + width * -1 + "," + y(dataset.data[minDiffElementIndex].value) + ")")
 		    .attr("x2", width + width);
 
       });

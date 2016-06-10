@@ -8,7 +8,7 @@ window.onload = function() {
 	var width = 960;
 	var height = 500;
 
-	graph = new SmartGraph(margin, width, height, dataDay.reverse());
+	graph = new SmartGraph(margin, width, height, dataDayTemperature);
 	graph.setXAxis();
 	graph.setYAxis();
 
