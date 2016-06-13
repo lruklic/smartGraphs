@@ -16,10 +16,10 @@ window.onload = function() {
 	graph.drawLine();
 	graph.crosshair();
 	
-	//graph.scatterPlot();
+	graph.scatterPlot();
 	graph.tooltip();
 
-	setInterval(function() { 
+	/*setInterval(function() { 
 		document.getElementsByClassName("d3-tip")[0].style.display = "none";
 		dataset = generateRandomDataset(20, 0, 100);
 		graph.updateDataset(dataset);
@@ -27,8 +27,8 @@ window.onload = function() {
 		graph.setYAxis();
 		graph.crosshair();
 		graph.drawLine();
-		//graph.scatterPlot();
-	}, 10000000);
+		graph.scatterPlot();
+	}, 10000000);*/
 
 }
 

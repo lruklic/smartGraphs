@@ -80,6 +80,12 @@ SmartGraph.prototype.createContextGraph = function() {
     		return y2(d.value); 
     	});
 
+    if (this.contextSvg) {
+
+    } else {
+
+    }
+
 	this.contextSvg = d3.select("body").select("svg")
 		.append("g")
 		.attr("class", "context")
@@ -142,6 +148,8 @@ SmartGraph.prototype.updateDataset = function(dataset) {
 	this.setXAxis();
 	this.setYAxis();
 	this.crosshair();
+	// this.createContextGraph();
+	this.scatterPlot();
 	this.drawLine();
 }
 
@@ -246,24 +254,25 @@ SmartGraph.prototype.scatterPlot = function() {
 		selection = selection.data(this.dataset.data).transition();
 	}
 
-	selection.attr("cx", function(d) { return x(d.id); })
-    	.attr("cy", function(d) { return y(d.value); })
-    	.attr("r", function(d) {
-    		if (d.value === max || d.value === min) {
-    			return 4.5;
-			} else {
-				return 3.5;
-			}
-    	})
-    	.attr("fill", function(d) {
-    		if (d.value === max) {
-    			return "red";
-			} else if (d.value === min) {
-				return "blue";
-			} else {
-				return "black";
-			}
-    	});
+	selection.attr("cx", function(d) { 
+		return x(d.date); 
+	}).attr("cy", function(d) { 
+		return y(d.value); 
+	}).attr("r", function(d) {
+		if (d.value === max || d.value === min) {
+			return 4.5;
+		} else {
+			return 3.5;
+		}
+    }).attr("fill", function(d) {
+		if (d.value === max) {
+			return "red";
+		} else if (d.value === min) {
+			return "blue";
+		} else {
+			return "black";
+		}
+    });
 
 }
 
