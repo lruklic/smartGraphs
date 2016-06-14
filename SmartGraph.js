@@ -80,27 +80,6 @@ SmartGraph.prototype.createContextGraph = function() {
     		return y2(d.value); 
     	});
 
-    if (this.contextSvg) {
-
-    } else {
-
-    }
-
-	this.contextSvg = d3.select("body").select("svg")
-		.append("g")
-		.attr("class", "context")
-		.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
-
-	this.contextSvg.append("path")
-      	.datum(this.dataset.data)
-      	.attr("class", "area")
-      	.attr("d", area2);
-
-    this.contextSvg.append("g")
-      	.attr("class", "x axis")
-      	.attr("transform", "translate(0," + this.height2 + ")")
-      	.call(this.xAxis2);
-
     var brush = d3.svg.brush()
     	.x(x2)
     	.on("brush", function() {
@@ -117,7 +96,28 @@ SmartGraph.prototype.createContextGraph = function() {
 
 			d3.select("svg").select(".x.axis").call(xAxis);
 
-    	});
+    });
+
+    this.contextSvg = d3.select("body").select("svg")
+		.append("g")
+		.attr("class", "context")
+		.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+    if (this.contextSvg) {
+    	this.contextSvg.select("path")
+    		.transition()
+    		.datum(this.dataset.data);	
+    } else {
+		this.contextSvg.append("path")
+	      	.datum(this.dataset.data)
+	      	.attr("class", "area")
+	      	.attr("d", area2);
+    }
+
+    this.contextSvg.append("g")
+      	.attr("class", "x axis")
+      	.attr("transform", "translate(0," + this.height2 + ")")
+      	.call(this.xAxis2);
 
     this.contextSvg.append("g")
       	.attr("class", "x brush")
