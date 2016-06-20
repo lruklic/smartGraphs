@@ -35,10 +35,18 @@ function SmartGraph(margin, width, height, dataset) {
 		.attr("class", "main")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+	var x = this.x;
+	var y = this.y;
+
+	this.valueline = d3.svg.line()
+		.x(function(d) { return x(new Date(d.date)); })
+		.y(function(d) { return y(d.value); })
+		.interpolate("monotone");
+
 	var datasetObject = new DatasetObject();
 	for (var i = 0; i < dataset.length; i++) {
 		if (typeof dataset[i].value === "string") {
-			var reading = new Reading(new Date(dataset[i].date).getTime(), Number(dataset[i].value.replace(",", ".")));
+			var reading = new Reading(new Date(dataset[i].date).getTime(), Number(dataset[i].value.replace(",", ".")), dataset[i].unit);
 			datasetObject.data.push(reading);
 		}
 	}
@@ -62,10 +70,12 @@ SmartGraph.prototype.createContextGraph = function() {
 	var y2 = this.y2;
 	var xAxis = this.xAxis;
 
+	var valueline = this.valueline;
+
 	var dataset = this.dataset;
 
 	this.x.domain([new Date(this.dataset.data[0].date), new Date(this.dataset.data[this.dataset.data.length-1].date)]);
-	this.y.domain([d3.min(this.dataset.data, function(d) { return d.value; }), d3.max(this.dataset.data, function(d) { return d.value; })]);
+	this.y.domain([d3.min(this.dataset.data, function(d) { return d.value; }) - 0.5, d3.max(this.dataset.data, function(d) { return d.value; }) + 0.5]);
 	this.x2.domain(this.x.domain());
 	this.y2.domain(this.y.domain());
 
@@ -84,53 +94,47 @@ SmartGraph.prototype.createContextGraph = function() {
     	.x(x2)
     	.on("brush", function() {
     		x.domain(brush.empty() ? x2.domain() : brush.extent());
-    		var valueline = d3.svg.line()
-    			.x(function(d) {
-    				return x(new Date(d.date)); 
-    			})
-    			.y(function(d) { return y(d.value); })
-    			.interpolate("monotone");
 
-   			var selection = d3.select("svg").select("g").select("path#linegraph");
-			selection.attr("d", valueline(dataset.data));
+   			var selection = d3.select("svg").select("g").select("path#linegraph").attr("d", valueline(dataset.data));
 
 			d3.select("svg").select(".x.axis").call(xAxis);
+			graph.scatterPlot();
 
     });
 
-    this.contextSvg = d3.select("body").select("svg")
-		.append("g")
-		.attr("class", "context")
-		.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+    if (!this.contextSvg) {
+    	this.contextSvg = d3.select("body").select("svg")
+			.append("g")
+			.attr("class", "context")
+			.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
 
-    if (this.contextSvg) {
-    	this.contextSvg.select("path")
-    		.transition()
-    		.datum(this.dataset.data);	
-    } else {
-		this.contextSvg.append("path")
-	      	.datum(this.dataset.data)
+    	this.contextSvg.append("path")
 	      	.attr("class", "area")
-	      	.attr("d", area2);
+	      	.attr("d", area2(this.dataset.data));
+
+	    this.contextSvg.append("g")
+	      	.attr("class", "x axis")
+	      	.attr("transform", "translate(0," + this.height2 + ")")
+	      	.call(this.xAxis2);
+
+    	this.contextSvg.append("g")
+	      	.attr("class", "x brush")
+	     	.call(brush)
+	    	.selectAll("rect")
+	      	.attr("y", -6)
+	      	.attr("height", this.height2 + 7);
+
+    	this.svg.append("defs").append("clipPath")
+	    	.attr("id", "clip")
+	  		.append("rect")
+	    	.attr("width", this.width)
+	    	.attr("height", this.height);
+    } else {
+    	this.contextSvg.select("path")
+    		.transition().duration(500)
+    		.attr("d", area2(this.dataset.data));
     }
 
-    this.contextSvg.append("g")
-      	.attr("class", "x axis")
-      	.attr("transform", "translate(0," + this.height2 + ")")
-      	.call(this.xAxis2);
-
-    this.contextSvg.append("g")
-      	.attr("class", "x brush")
-     	.call(brush)
-    	.selectAll("rect")
-      	.attr("y", -6)
-      	.attr("height", this.height2 + 7);
-
-    this.svg.append("defs").append("clipPath")
-    	.attr("id", "clip")
-  		.append("rect")
-    	.attr("width", this.width)
-    	.attr("height", this.height);
 }
 
 SmartGraph.prototype.updateDataset = function(dataset) {
@@ -147,10 +151,11 @@ SmartGraph.prototype.updateDataset = function(dataset) {
 
 	this.setXAxis();
 	this.setYAxis();
-	this.crosshair();
-	// this.createContextGraph();
+	// this.crosshair();
+	this.createContextGraph();
 	this.scatterPlot();
 	this.drawLine();
+	this.tooltip();
 }
 
 /**
@@ -211,13 +216,6 @@ SmartGraph.prototype.drawLine = function(interpolation) {
 	var x = this.x;
 	var y = this.y;
 
-	var valueline = d3.svg.line()
-    	.x(function(d) { 
-    		return x(new Date(d.date)); 
-    	})
-    	.y(function(d) { return y(d.value); })
-    	.interpolate(interpolation ? interpolation : "monotone");
-
     var selection = this.svg.select("path#linegraph");
 
 	if (selection.empty()) {
@@ -230,7 +228,7 @@ SmartGraph.prototype.drawLine = function(interpolation) {
 		selection = selection.transition().duration(500);
 	}
 		
-	selection.attr("d", valueline(this.dataset.data));
+	selection.attr("d", this.valueline(this.dataset.data));
 
 }
 
@@ -251,7 +249,7 @@ SmartGraph.prototype.scatterPlot = function() {
 	if (selection.empty()) {
 		selection = selection.data(this.dataset.data).enter().append("g").append("circle");
 	} else {
-		selection = selection.data(this.dataset.data).transition();
+		selection = selection.data(this.dataset.data).transition().duration(700);
 	}
 
 	selection.attr("cx", function(d) { 
@@ -365,7 +363,13 @@ SmartGraph.prototype.tooltip = function() {
   		.attr('class', 'd3-tip')
   		.offset([-10, 0])
   		.html(function(d) {
-    		return "<strong>Temperature:</strong> <span style='color:red'>" + d.value + "</span>";
+  			var date = moment(d.date).format("D.M, h:mm:ss");
+  			var time = "<strong>Date:</strong> <span style='color:red'>" + date + "</span>";
+
+  			var unit = (d.unit == "C" ? "Temperature" : "Humidity"); 
+    		var value = "<strong>" + unit + ":</strong> <span style='color:red'>" + d.value + "</span>";
+
+    		return "<div> <p>" + time + "</p>" + "<p>" + value + "</p> </div>";
   		});
 
   	this.svg.call(tip);
