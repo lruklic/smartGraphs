@@ -14,7 +14,7 @@ window.onload = function() {
 
 	graph.gridBackground();
 	graph.drawLine();
-	graph.crosshair();
+	//graph.crosshair();
 	
 	graph.scatterPlot();
 	graph.tooltip();

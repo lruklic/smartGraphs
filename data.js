@@ -4,14 +4,14 @@ var dataDayTemperature = [
     "value":"25,31",
     "unit":"C",
     "date":"08.04.2016 13:26:49"
-  },
-  {
+   },
+   {
     "id":2,
     "value":"25,24",
     "unit":"C",
     "date":"08.04.2016 13:24:49"
-  },
-  {
+   },
+   {
     "id":3,
     "value":"25,25",
     "unit":"C",

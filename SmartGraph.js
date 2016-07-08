@@ -53,7 +53,8 @@ function SmartGraph(margin, width, height, dataset) {
 
 	this.dataset = datasetObject;
 
-	this.createContextGraph();
+	this.setDomains();
+	// this.createContextGraph();
 
 }
 
